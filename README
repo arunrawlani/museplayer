@@ -1,0 +1,42 @@
+muse-player
+===========
+
+muse-player is a utility for recording, saving, and replaying EEG 
+and accelerometer data from Muse EEG devices. It can save to and 
+convert between the native Muse datatype (.muse), Matlab (HDF5), CSV, and OSC 
+replay formats.
+
+This repository contains the sources for muse-player. They can be
+used to generate the muse-player binary included with the SDK.
+
+Dependencies  
+============
+
+- pyinstaller - to build the all-in-one executable
+
+####C libraries
+
+- liblo       - for osc reading/writing
+
+####Python libraries
+
+
+- pyliblo     - python bindings for liblo
+- scipy       - for ??? 
+- numpy       - for ??? 
+- protobuf    - for reading/writing .muse files
+- h5py        - for reading/writing hdf5 matlab files
+
+Building
+========
+
+Build scripts are under scripts/. E.g.
+
+    scripts/build.sh
+
+to build the executable.
+
+Contributing
+============
+
+To contribute code to the muse-player project, you must follow the standard fork and pull request workflow. for details on this process as well as how to submit bug reports and feature requests, see the CONTRIBUTE doc.
