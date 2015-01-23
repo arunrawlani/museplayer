@@ -95,4 +95,4 @@ License
 ======
 ------
 
-MusePlayer is licensed under the provisions of the MIT license. See the LICENSE file for details.
+MusePlayer is licensed under the provisions of the Apache license 2.0. See the LICENSE file for details.
