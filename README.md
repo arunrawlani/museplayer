@@ -51,8 +51,6 @@ Dependencies
 ============
 ------------
 
-- [PyInstaller](https://github.com/pyinstaller/pyinstaller/wiki) - to build the all-in-one executable
-
 ###3rd Party Repositories
 
 These repos are included as git submodules of the top level museplayer.git repo. Update them with:
@@ -71,6 +69,12 @@ These repos are included as git submodules of the top level museplayer.git repo.
 - [numpy](http://www.numpy.org/)      - for reading/writing HDF5 matlab files
 - [Google Protocol Buffers](https://developers.google.com/protocol-buffers/)    - for reading/writing .muse files
 - [h5py](http://www.h5py.org/)    - python bindings for libhdf5
+
+
+###Build Dependencies
+
+- [PyInstaller](https://github.com/pyinstaller/pyinstaller/wiki) - to build the all-in-one executable
+
 
 ###Testing Dependencies
 
