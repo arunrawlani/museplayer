@@ -114,6 +114,15 @@ To contribute code to the MusePlayer project, you must follow the standard fork 
 process as well as how to submit bug reports and feature requests, see the CONTRIBUTE file.
 
 
+Documentation
+=============
+-------------
+
+Documentation regarding the implementation and development of MusePlayer is hosted here on the [Bitbucket wiki](https://bitbucket.org/interaxon/museplayer/wiki/Home) for this repo.
+
+For documentation on the Muse SDK in general and how to develop applications for Muse with it, visit [developer.choosemuse.com](developer.choosemuse.com).
+
+
 License
 ======
 ------
