@@ -120,6 +120,9 @@ class MatlabWriter(OutputHandler):
         self.received_data = 0
         self.data_written = 0
         self.files_written = 0
+        self.__verbose = None
+        self.__filters = None
+
 
     def set_data_structure(self, config = {}, device = {}):
         self.__dataset = {
