@@ -1,9 +1,11 @@
 #
 # muse-to-mat.py
-# This script converts .muse files to .mat files about 3.5x faster than default muse-player.
+# This script converts .muse files to .mat files at least 3.5x faster than default muse-player.
 # This script is made for speed, while muse-player is made to support many different types of scenarios.
 # Note that it currently only supports version 2 of Muse files.
-# 
+# Though it supports multiple input files, all the files must contain distinct types of data,
+# or the files must be time-ordered. (It does not automatically time-order data)
+#
 
 import sys
 import signal
@@ -57,6 +59,9 @@ class MuseProtoBufReaderV2(object):
     def setMatlabWriter(self, MatlabWriter):
         self.matlabWriter = MatlabWriter
 
+    def done(self):
+        self.add_done()
+
     def parse(self):
         done = False
         while True:
@@ -87,7 +92,6 @@ class MuseProtoBufReaderV2(object):
             # (3) Process this chunk of data
             for obj in muse_data_collection.collection:
                 self.handle_data(obj)
-        self.add_done()
 
     def add_done(self):
         self.matlabWriter.receive_msg([self.__timestamp + 0.001, 'done'])
@@ -221,45 +225,41 @@ def run():
     # Catch control-C
     signal.signal(signal.SIGINT, ix_signal_handler)
 
-    parser = ArgumentParser(description="Coverts .muse files to .mat files 3.5x faster than muse-player.",
+    parser = ArgumentParser(description="Coverts .muse files to .mat files at least 3.5x faster than muse-player.",
                             prog="muse-to-mat.py",
-                            usage="%(prog)s -i <input_file> -o <output_file>",
-                            formatter_class=RawDescriptionHelpFormatter,
-                            epilog="""
-
-Examples:
-    muse-to-mat.py -i input.muse -o output.mat
-        This will read in the file "input.muse" and create a file "output.mat" with the converted data in it.
-
-                            """)
-    parser.add_argument("-i", "--input-muse-file",
+                            usage="%(prog)s -i <input_file1> <input_file2> ... -o <output_file>")
+    parser.add_argument("-i", "--input-muse-file", nargs="+",
                               help="Input Muse file",
                               metavar="FILE")
     parser.add_argument("-o", "--output-mat-file",
                               help="Output MATLAB file",
                               metavar="FILE")
-    parser.add_argument("-v", "--verbose", const="verbose", nargs="?", help="Print some output.")
+    parser.add_argument("-v", "--verbose", const="verbose", nargs="?", metavar="", help="Print some output.")
     args = parser.parse_args()
 
     if not args.input_muse_file or not args.output_mat_file:
         print "Not enough args."
         sys.exit()
 
-    infile = None
-    try:
-        infile = open(args.input_muse_file, "rb")
-    except:
-        print "File not found: " + args.input_muse_file
-        exit()
+    infiles = {}
+    for filename in args.input_muse_file:
+        try:
+            infiles[filename] = open(filename, "rb")
+        except Exception, e:
+            print "File not found: " + filename
+            print e
+            exit()
+        if args.verbose:
+            print "File opened: " + filename
 
-    if args.verbose:
-        print "File opened: " + args.input_muse_file
-
-    reader = CreateMuseFileReader(infile)
     matlab_writer = output_handler.MatlabWriter(args.output_mat_file)
     matlab_writer.set_data_structure()
-    reader.setMatlabWriter(matlab_writer)
-    reader.parse()
+    for key, infile in infiles.iteritems():
+        print infile
+        reader = CreateMuseFileReader(infile)
+        reader.setMatlabWriter(matlab_writer)
+        reader.parse()
+    reader.done()
     if args.verbose:
         print "MATLAB file written: " + args.output_mat_file
 
