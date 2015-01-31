@@ -9,7 +9,7 @@
 
 import sys
 import signal
-from argparse import ArgumentParser, RawDescriptionHelpFormatter
+from argparse import ArgumentParser
 from Muse_v2 import *
 import struct
 import json
@@ -20,29 +20,6 @@ import output_handler
 def ix_signal_handler(signum, frame):
     print "Aborted."
     sys.exit()
-
-
-def CreateMuseFileReader(infile):
-    # (1) Read the message header
-    header_bin = infile.read(4)
-    # check for EOF
-    if len(header_bin) == 0:
-        print "Zero Sized Muse File"
-        exit()
-
-    header = struct.unpack("<i", header_bin)
-    msg_length = header[0]
-    msg_type = infile.read(2)
-    msg_type = struct.unpack("<h", msg_type)
-    msg_type = msg_type[0]
-    infile.seek(0, 0)
-    if msg_type == 1:
-        # set reader to version 1
-        print "Version 1 not supported right now."
-        #return MuseProtoBufReaderV1(verbose)
-    elif msg_type == 2:
-        # set reader to version 2
-        return MuseProtoBufReaderV2(infile)
 
 
 class MuseProtoBufReaderV2(object):
@@ -63,7 +40,6 @@ class MuseProtoBufReaderV2(object):
         self.add_done()
 
     def parse(self):
-        done = False
         while True:
             # (1) Read the message header
             header_bin = self.infile.read(4)
@@ -77,7 +53,7 @@ class MuseProtoBufReaderV2(object):
             msg_type = struct.unpack("<h", msg_type)
             msg_type = msg_type[0]
             if msg_type != 2:
-                print 'Corrupted file, type mismatch. Parsed: ' + str(msg_type) + ' expected 2'
+                print 'This script only supports Muse files version 2. Parsed: ' + str(msg_type) + ' expected 2'
                 break
 
             # (2) Read and parse the message
@@ -238,30 +214,29 @@ def run():
     args = parser.parse_args()
 
     if not args.input_muse_file or not args.output_mat_file:
-        print "Not enough args."
-        sys.exit()
+        parser.print_help()
+        sys.exit(1)
 
     infiles = {}
     for filename in args.input_muse_file:
         try:
             infiles[filename] = open(filename, "rb")
-        except Exception, e:
+        except IOError:
             print "File not found: " + filename
-            print e
-            exit()
+            sys.exit(1)
         if args.verbose:
             print "File opened: " + filename
 
     matlab_writer = output_handler.MatlabWriter(args.output_mat_file)
     matlab_writer.set_data_structure()
     for key, infile in infiles.iteritems():
-        print infile
-        reader = CreateMuseFileReader(infile)
+        reader = MuseProtoBufReaderV2(infile)
         reader.setMatlabWriter(matlab_writer)
         reader.parse()
     reader.done()
     if args.verbose:
         print "MATLAB file written: " + args.output_mat_file
+    sys.exit(0)
 
 if __name__ == "__main__":
     run()
