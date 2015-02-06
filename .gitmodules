@@ -3,4 +3,4 @@
 	url = git@bitbucket.org:interaxon/3rdparty_liblo.git
 [submodule "3rdparty/hdf5storage"]
 	path = 3rdparty/hdf5storage
-	url = git@bitbucket.org:interaxon/3rdparty_hdf5storage.git
+	url = https://github.com/frejanordsiek/hdf5storage
