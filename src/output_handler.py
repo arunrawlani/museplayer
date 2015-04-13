@@ -262,14 +262,18 @@ class MatlabWriter(OutputHandler):
                 self.__dataset[key][unicode(datatype)] = [[input_data[0]], input_data[1]]
 
     def handle_annotation(self, time, raw_name, event_type):
-        match_begin = re.search('^.{8}(.*).(Start|BEGIN)$', raw_name)
-        match_end = re.search('^.{8}(.*).(Stop|Done|END)$', raw_name)
+        match_begin = re.search('^.{8}(.*).(Start|Pause|BEGIN)$', raw_name)
+        match_end = re.search('^.{8}(.*).(Stop|Done|Resume|END)$', raw_name)
         if match_begin and not ('Click' in raw_name) and not ('Session' in raw_name):
             process_event = self.__markers.add_begin
             name = unicode(match_begin.group(1))
+            if match_begin.group(2) == 'Pause':
+                name = name + '_Pause'
         elif match_end:
             process_event = self.__markers.add_end
             name = unicode(match_end.group(1))
+            if match_end.group(2) == 'Resume':
+                name = name + '_Pause'
         elif event_type:
             name = unicode(raw_name)
             if 'begin' in event_type:
