@@ -1,4 +1,10 @@
 # Copyright 2015 InteraXon, Inc.
+"""
+Marker reconstruction.
+
+This module is used by MatlabWriter to produce the markers struct in HDF5
+files.
+"""
 
 class MarkerReconstructor(object):
     """
@@ -12,6 +18,10 @@ class MarkerReconstructor(object):
     the same name, where it can't otherwise be determined, they are always
     assumed to nest, i.e. <a 1><a 2></a 3></a 4> always leads to an outer a at
     [1, 4] and an inner a at [2, 3].
+
+    Ends without beginnings have times represented as [-1, end_time].
+    Beginnings without ends are represented as [start_time], i.e. a one-element
+    array with just the beginning time.
     """
     def __init__(self):
         self._marker_name_to_start = dict()
@@ -33,7 +43,15 @@ class MarkerReconstructor(object):
         self._marker_name_to_start[name].append(time)
 
     def add_end(self, time, name):
-        "Record the end of a marker event."
+        """
+        Record the end of a marker event.
+
+        If there is a corresponding beginning at time t without an end, then
+        after this call, there is a marker with interval [t, time].
+
+        If there is no corresponding beginning marker, then this call records a
+        marker with a start time of -1.
+        """
         if not name in self._marker_name_to_start:
             self._marker_name_to_start[name] = []
         start_times = self._marker_name_to_start[name]
@@ -67,7 +85,7 @@ class MarkerReconstructor(object):
                     'name': name,
                     'times': [start_time],
                 })
-        def time_ordering(item):
+        def time_ordering(item):    # pylint:disable=missing-docstring
             if item['times'][0] < 0:
                 return item['times'][-1]
             else:
