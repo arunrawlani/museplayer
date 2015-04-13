@@ -31,7 +31,7 @@ class MarkerReconstructor(object):
     def add_instance(self, time, name):
         "Record an instantaneous event."
         self._instances.append({
-            'type': 'instance',
+            'type': u'instance',
             'name': name,
             'times': [time],
         })
@@ -57,14 +57,14 @@ class MarkerReconstructor(object):
         start_times = self._marker_name_to_start[name]
         if not start_times:
             self._markers.append({
-                'type': 'marker',
+                'type': u'marker',
                 'name': name,
                 'times': [-1, time]
             })
         else:
             last_start_time = start_times.pop()
             self._markers.append({
-                'type': 'marker',
+                'type': u'marker',
                 'name': name,
                 'times': [last_start_time, time],
             })
@@ -81,7 +81,7 @@ class MarkerReconstructor(object):
         for name, start_times in self._marker_name_to_start.items():
             for start_time in start_times:
                 ret_list.append({
-                    'type': 'marker',
+                    'type': u'marker',
                     'name': name,
                     'times': [start_time],
                 })
@@ -92,7 +92,7 @@ class MarkerReconstructor(object):
                 return item['times'][0]
         ret_sorted = sorted(ret_list, key=time_ordering)
         return {
-            'type': [x['type'] for x in ret_sorted],
-            'name': [x['name'] for x in ret_sorted],
-            'times': [x['times'] for x in ret_sorted]
+            u'type': [x['type'] for x in ret_sorted],
+            u'name': [x['name'] for x in ret_sorted],
+            u'times': [x['times'] for x in ret_sorted]
         }
