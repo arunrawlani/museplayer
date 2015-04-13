@@ -6,6 +6,8 @@ This module is used by MatlabWriter to produce the markers struct in HDF5
 files.
 """
 
+import numpy as np
+
 class MarkerReconstructor(object):
     """
     Converts a sequence of events to instances and markers.
@@ -31,7 +33,7 @@ class MarkerReconstructor(object):
     def add_instance(self, time, name):
         "Record an instantaneous event."
         self._instances.append({
-            'type': u'instance',
+            'type': 'Instance',
             'name': name,
             'times': [time],
         })
@@ -57,14 +59,14 @@ class MarkerReconstructor(object):
         start_times = self._marker_name_to_start[name]
         if not start_times:
             self._markers.append({
-                'type': u'marker',
+                'type': 'Marker',
                 'name': name,
                 'times': [-1, time]
             })
         else:
             last_start_time = start_times.pop()
             self._markers.append({
-                'type': u'marker',
+                'type': 'Marker',
                 'name': name,
                 'times': [last_start_time, time],
             })
@@ -81,7 +83,7 @@ class MarkerReconstructor(object):
         for name, start_times in self._marker_name_to_start.items():
             for start_time in start_times:
                 ret_list.append({
-                    'type': u'marker',
+                    'type': 'Marker',
                     'name': name,
                     'times': [start_time],
                 })
@@ -91,8 +93,13 @@ class MarkerReconstructor(object):
             else:
                 return item['times'][0]
         ret_sorted = sorted(ret_list, key=time_ordering)
-        return {
-            u'type': [x['type'] for x in ret_sorted],
-            u'name': [x['name'] for x in ret_sorted],
-            u'times': [x['times'] for x in ret_sorted]
-        }
+        ret_rec = np.recarray((len(ret_sorted),),
+                              dtype=[('type', 'O', (1,1)),
+                                     ('name', 'O', (1,1)),
+                                     ('times', 'O')])
+        for i, x in enumerate(ret_sorted):
+            name = np.asarray(x['name'], dtype=np.string_)
+            ret_rec[i]['name'][0] = np.asarray(x['name'], dtype=np.string_)
+            ret_rec[i]['times'] = np.asarray(x['times'])
+            ret_rec[i]['type'][0] = np.asarray(x['type'], dtype=np.string_)
+        return ret_rec
