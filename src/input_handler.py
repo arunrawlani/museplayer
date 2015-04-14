@@ -144,6 +144,12 @@ class MuseProtoBufFileReader(InputHandler):
             elif msg_type == 2:
                 # set reader to version 2
                 self.protobuf_reader.append(MuseProtoBufReaderV2(verbose))
+            else:
+                print 'Muse File version missing, cannot parse.' 
+                print 'All Muse Files data must be prepended with it''s length and version #.'
+                print 'Latest version is 2, exiting Muse-Player now.'
+                self.put_done_message()
+                exit() 
 
 
             parse_thread = threading.Thread(target=self.protobuf_reader[in_streams.index(in_stream)].parse, args=[in_stream])
