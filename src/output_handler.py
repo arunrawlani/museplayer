@@ -13,6 +13,7 @@ from Muse_v2 import _EEGUNITS
 from Muse_v2 import _ACCELEROMETERUNITS
 import hdf5storage as h5
 import collections
+import marker_reconstructor
 
 class OutputHandler(object):
     def __init__(self, queue):
@@ -114,6 +115,7 @@ class MatlabWriter(OutputHandler):
     def __init__(self, out_file):
         # the most important part of dataset is now the first dict which contains the main struct, IXDATA
         self.__dataset = {}
+        self.__markers = marker_reconstructor.MarkerReconstructor()
         self.set_data_structure()
         self.__value = []
         self.__file_out = out_file
@@ -153,12 +155,6 @@ class MatlabWriter(OutputHandler):
                         u'data': []
                     }
                 },
-                u'm_struct': {
-                    u'm_names': [],
-                    u'i_names': [],
-                    u'm_times': [],
-                    u'i_times': []
-                },
                 u'feat': [],
                 u'class': []
             },
@@ -186,6 +182,7 @@ class MatlabWriter(OutputHandler):
                 file_name = self.__file_out + '_' + str(self.files_written+1)
 
         self.__dataset['IXDATA'] = self.convert_list_to_numpy_list(self.__dataset['IXDATA'])
+        self.__dataset['IXDATA'][u'markers'] = self.__markers.markers()
         if 'elements' in self.__dataset:
             self.__dataset['elements'] = self.convert_list_to_numpy_list(self.__dataset['elements'])
         h5.write(self.__dataset, path='/', filename=file_name,  truncate_existing=True, store_python_metadata=True, matlab_compatible=True)
@@ -197,8 +194,6 @@ class MatlabWriter(OutputHandler):
             return dictionary
         if isinstance(dictionary, dict):
             for key, value in dictionary.iteritems():
-                if key in ['m_names', 'i_names']:
-                    continue
                 if isinstance(value, dict):
                     diction = self.convert_list_to_numpy_list(value)
                     dictionary[key] = diction
@@ -266,6 +261,32 @@ class MatlabWriter(OutputHandler):
                 datatype = osc_path[old_format_offset:]
                 self.__dataset[key][unicode(datatype)] = [[input_data[0]], input_data[1]]
 
+    def handle_annotation(self, time, raw_name, event_type):
+        match_begin = re.search('^.{8}(.*).(Start|Pause|BEGIN)$', raw_name)
+        match_end = re.search('^.{8}(.*).(Stop|Done|Resume|END)$', raw_name)
+        if match_begin and not ('Click' in raw_name) and not ('Session' in raw_name):
+            process_event = self.__markers.add_begin
+            name = unicode(match_begin.group(1))
+            if match_begin.group(2) == 'Pause':
+                name = name + '_Pause'
+        elif match_end:
+            process_event = self.__markers.add_end
+            name = unicode(match_end.group(1))
+            if match_end.group(2) == 'Resume':
+                name = name + '_Pause'
+        elif event_type:
+            name = unicode(raw_name)
+            if 'begin' in event_type:
+                process_event = self.__markers.add_begin
+            elif 'end' in event_type:
+                process_event = self.__markers.add_end
+            else:   # XXX not chopping off the first char of the value on 'instance' type anymore
+                process_event = self.__markers.add_instance
+        else:
+            process_event = self.__markers.add_instance
+            name = unicode(raw_name)
+        process_event(time, name)
+
     def create_dict_based_on_path(self, dictionary, path_list, dataset):
         if len(path_list) == 1:
             dictionary.setdefault(unicode(path_list[0]), []).append(dataset)
@@ -288,36 +309,15 @@ class MatlabWriter(OutputHandler):
 
         temp = []
         temp.append(msg[0])
-        i = 1
         for x in msg[3]:
             temp.append(x)
-            i = i + 1
         if ('i' in msg[2]) or ('f' in msg[2]) or ('d' in msg[2]) or ('s' in msg[2]):
             if any(identifier in msg[1] for identifier in raw_data_identifier):
                 self.handle_raw_data(msg[1], temp)
             elif any(identifier in msg[1] for identifier in config_identifier):
                 self.handle_config_data(msg[1], temp)
             elif "muse/annotation" in msg[1]:
-                if (re.search('Start$', temp[1]) or re.search('BEGIN$', temp[1])) and not ('Click' in temp[1]) and not ('Session' in temp[1]):
-                    self.__dataset["IXDATA"]["m_struct"]["m_names"].append([str(temp[1][8:len(temp[1])-6])])
-                    self.__dataset["IXDATA"]["m_struct"]["m_times"].append([temp[0], 0])
-                elif re.search('Stop$', temp[1]) or re.search("Done$", temp[1]) or re.search("END$", temp[1]):
-                    self.__dataset["IXDATA"]["m_struct"]["m_times"].append([temp[0], 1])
-                elif len(temp) > 3:
-                    if 'instance' in temp[3]:
-                        self.__dataset["IXDATA"]["m_struct"]["i_names"].append([str(temp[1][1:])])
-                        self.__dataset["IXDATA"]["m_struct"]["i_times"].append([temp[0]])
-                    elif 'begin' in temp[3]:
-                        self.__dataset["IXDATA"]["m_struct"]["m_names"].append([str(temp[1][8:])])
-                        self.__dataset["IXDATA"]["m_struct"]["m_times"].append([temp[0], 0])
-                    elif 'end' in temp[3]:
-                        self.__dataset["IXDATA"]["m_struct"]["m_times"].append([temp[0], 1])
-                    else:
-                        self.__dataset["IXDATA"]["m_struct"]["i_names"].append([unicode(temp[1])])
-                        self.__dataset["IXDATA"]["m_struct"]["i_times"].append([temp[0]])
-                else:
-                    self.__dataset["IXDATA"]["m_struct"]["i_names"].append([str(temp[1])])
-                    self.__dataset["IXDATA"]["m_struct"]["i_times"].append([temp[0]])
+                self.handle_annotation(temp[0], temp[1], temp[3] if len(temp) > 3 else None)
             elif "/muse/elements" in msg[1]:
                 msg[1] = msg[1].replace('-', '_')
                 name = msg[1][15:].replace('/', '_')
